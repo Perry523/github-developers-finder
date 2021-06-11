@@ -277,12 +277,13 @@ export default {
   },
   methods: {
     async searchUsers() {
+      this.userFound = {}
       this.$q.loading.show();
       const locale = this.getQuery("locale");
       const language = this.getQuery("language");
       const repos = this.getQuery("repos");
       const { data } = await this.$http(
-        "https://api.github.com/search/users?q=" + locale + language + repos
+        "https://api.github.com/search/users?q=type:user" + locale + language + repos
       );
       this.usersFound = data.items;
       this.$q.loading.hide();
@@ -305,7 +306,7 @@ export default {
     goToUser(user) {
       this.loadRepositories(user);
     },
-    async loadRepositories() {
+    async loadRepositories(user) {
       this.$q.loading.show();
       this.userFound = user;
       this.repositories = await this.$http(this.userFound.repos_url).then(
