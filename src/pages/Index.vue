@@ -1,6 +1,29 @@
 <template>
-  <q-page>
-    <div class="col-4 d-flex row flex-center content-start">
+  <q-page class="column items-center">
+    <q-page-sticky
+      style="z-index: 1"
+      position="bottom-right"
+      :offset="[18, 18]"
+    >
+      <q-btn fab @click="configDialog = true" icon="settings" color="primary" />
+    </q-page-sticky>
+    <q-page-sticky
+      v-if="usersFound.length && userFound.id"
+      style="z-index: 1"
+      position="bottom-left"
+      :offset="[18, 18]"
+    >
+      <q-btn
+        fab
+        @click="userFound = {}"
+        icon="keyboard_backspace"
+        color="primary"
+      />
+    </q-page-sticky>
+    <div
+      v-if="configs.nickname"
+      class="col-4 full-width d-flex row flex-center content-start"
+    >
       <q-input
         v-model="userToFind"
         @keyup.enter="searchUser"
@@ -15,7 +38,36 @@
         @click="searchUser"
       />
     </div>
-    <div v-if="userFound.id" class="d-flex column q-mt-md items-center">
+    <div
+      v-else
+      style="max-width: 1000px"
+      class="row full-width q-col-gutter-sm"
+    >
+      <div v-if="configs.locale" class="col-12 col-sm-6">
+        <q-input :label="filter.locale.label" v-model="filter.locale.value" />
+      </div>
+      <div v-if="configs.language" class="col-12 col-sm-6">
+        <q-input
+          :label="filter.language.label"
+          v-model="filter.language.value"
+        />
+      </div>
+      <div v-if="configs.repos" class="col-12 col-sm-6">
+        <q-input :label="filter.repos.label" v-model="filter.repos.value" />
+      </div>
+      <div></div>
+      <q-btn
+        @click="searchUsers"
+        class="col-12 q-mt-md q-mx-auto self-center"
+        color="primary"
+        style="max-width: 500px"
+        label="pesquisar"
+      />
+    </div>
+    <div
+      v-if="userFound.id"
+      class="d-flex full-width column q-mt-md items-center"
+    >
       <div class="relative-position">
         <q-avatar size="200px" font-size="52px" color="teal" text-color="white">
           <img :src="userFound.avatar_url" />
@@ -101,6 +153,69 @@
         </div>
       </div>
     </div>
+    <div
+      class="full-width q-col-gutter-sm row q-mt-sm"
+      v-if="usersFound.length && !userFound.id"
+    >
+      <div
+        class="row col-12 col-sm-6 relative-position bb"
+        v-for="user in usersFound"
+        :key="user.id"
+      >
+        <q-avatar
+          class="cursor-pointer"
+          @click="goToUser(user)"
+          size="100px"
+          font-size="52px"
+          color="teal"
+          text-color="white"
+        >
+          <img :src="user.avatar_url" />
+        </q-avatar>
+        <div class="column col q-ml-md ellipsis">
+          <div class="text-h6 text-md-h4">{{ user.login }}</div>
+          <div class="text-md-h6 q-pb-sm text-grey-14 ellipsis full-width">
+            {{ user.name }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <q-dialog v-model="configDialog">
+      <q-card class="column" style="height: 500px; width: 300px">
+        <div class="text-center text-h6">Configurações</div>
+        <q-card-section class="column">
+          <div class="text-bold">Filtrar por:</div>
+          <q-checkbox
+            label="Nickname"
+            @input="test"
+            v-model="configs.nickname"
+          ></q-checkbox>
+          <q-checkbox
+            label="Localização"
+            @input="configs.nickname = false"
+            v-model="configs.locale"
+          ></q-checkbox>
+          <q-checkbox
+            label="Linguagem"
+            @input="configs.nickname = false"
+            v-model="configs.language"
+          ></q-checkbox>
+          <q-checkbox
+            label="Nº Repositórios"
+            @input="configs.nickname = false"
+            v-model="configs.repos"
+          ></q-checkbox>
+        </q-card-section>
+        <q-card-actions class="q-mt-auto">
+          <q-btn
+            color="primary"
+            class="full-width"
+            @click="configDialog = false"
+            >Confirmar</q-btn
+          >
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
     <q-dialog v-model="confirm">
       <q-card>
         <q-card-section class="row items-center">
@@ -120,19 +235,84 @@ export default {
   name: "PageIndex",
   data() {
     return {
+      configs: {},
+      initialConfigState: {
+        nickname: true,
+        locale: false,
+        language: false,
+        repos: false
+      },
+      initialFilterState: {
+        locale: {
+          label: "Escolha o lugar",
+          filter: "location",
+          value: null
+        },
+        language: {
+          label: "Escolha a linguagem",
+          filter: "language",
+          value: null
+        },
+        repos: {
+          label: "Quantidade de repositórios",
+          filter: "repos",
+          value: null
+        }
+      },
+      filter: {},
+      configDialog: false,
       userToFind: null,
       repositories: [],
       userFound: {},
+      usersFound: [],
       favorite: false,
       confirm: false,
       repositoryToFilter: null,
       repositoriesToShow: []
     };
   },
+  mounted() {
+    this.configs = Object.assign({}, this.initialConfigState);
+    this.filter = Object.assign({}, this.initialFilterState);
+  },
   methods: {
+    async searchUsers() {
+      this.$q.loading.show();
+      const locale = this.getQuery("locale");
+      const language = this.getQuery("language");
+      const repos = this.getQuery("repos");
+      const { data } = await this.$http(
+        "https://api.github.com/search/users?q=" + locale + language + repos
+      );
+      this.usersFound = data.items;
+      this.$q.loading.hide();
+    },
+    getQuery(value) {
+      if (this.filter[value].value && this.filter[value].value.length)
+        if (value === "repos") {
+          return `${this.filter[value].filter}:>${this.filter[value].value}`;
+        } else
+          return `${this.filter[value].filter}:${this.filter[value].value}+`;
+      return "";
+    },
+    test(value) {
+      if (value) this.configs = Object.assign({}, this.initialConfigState);
+    },
     goToRepository(i) {
       const win = window.open(this.repositories[i].html_url, "_blank");
       win.focus();
+    },
+    goToUser(user) {
+      this.loadRepositories(user);
+    },
+    async loadRepositories() {
+      this.$q.loading.show();
+      this.userFound = user;
+      this.repositories = await this.$http(this.userFound.repos_url).then(
+        response => response.data
+      );
+      this.repositoriesToShow = this.repositories;
+      this.$q.loading.hide();
     },
     async searchUser() {
       this.$q.loading.show();
@@ -149,11 +329,8 @@ export default {
           return {};
         });
       this.isFavorite();
-      this.repositories = await this.$http(this.userFound.repos_url).then(
-        response => response.data
-      );
-      this.repositoriesToShow = this.repositories;
       this.$q.loading.hide();
+      this.loadRepositories(this.userFound);
     },
     toggleFavorites() {
       if (this.favorite) {
