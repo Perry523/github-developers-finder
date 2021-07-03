@@ -5,7 +5,13 @@
       position="bottom-right"
       :offset="[18, 18]"
     >
-      <q-btn fab @click="configDialog = true" icon="settings" color="primary" />
+      <q-btn
+        id="#v-step-1"
+        fab
+        @click="configDialog = true"
+        icon="settings"
+        color="primary"
+      />
     </q-page-sticky>
     <q-page-sticky
       v-if="usersFound.length && userFound.id"
@@ -27,6 +33,7 @@
       <q-input
         v-model="userToFind"
         @keyup.enter="searchUser"
+        id="v-step-0"
         class="w-50"
         type="text"
         label="Nick do usuário"
@@ -44,10 +51,15 @@
       class="row full-width q-col-gutter-sm"
     >
       <div v-if="configs.locale" class="col-12 col-sm-6">
-        <q-input :label="filter.locale.label" v-model="filter.locale.value" />
+        <q-select
+          :options="filter.locale.options"
+          :label="filter.locale.label"
+          v-model="filter.locale.value"
+        />
       </div>
       <div v-if="configs.language" class="col-12 col-sm-6">
-        <q-input
+        <q-select
+          :options="filter.language.options"
           :label="filter.language.label"
           v-model="filter.language.value"
         />
@@ -56,13 +68,15 @@
         <q-input :label="filter.repos.label" v-model="filter.repos.value" />
       </div>
       <div></div>
-      <q-btn
-        @click="searchUsers"
-        class="col-12 q-mt-md q-mx-auto self-center"
-        color="primary"
-        style="max-width: 500px"
-        label="pesquisar"
-      />
+      <div class="col-12 q-mx-auto self-center">
+        <q-btn
+          @click="searchUsers"
+          class="col-12 full-width q-mx-auto self-center"
+          color="primary"
+          style="max-width: 500px"
+          label="pesquisar"
+        />
+      </div>
     </div>
     <div
       v-if="userFound.id"
@@ -80,15 +94,11 @@
           flat
         >
           <template v-if="favorite">
-            <q-tooltip>
-              Remover dos favoritos
-            </q-tooltip>
+            <q-tooltip> Remover dos favoritos </q-tooltip>
             <q-icon size="60px" color="yellow-7" name="grade"></q-icon>
           </template>
           <template v-else>
-            <q-tooltip>
-              Adicionar aos favoritos
-            </q-tooltip>
+            <q-tooltip> Adicionar aos favoritos </q-tooltip>
             <q-icon size="60px" color="yellow-7" name="o_grade"></q-icon>
           </template>
         </q-btn>
@@ -103,7 +113,15 @@
         Repositorios publicos: {{ userFound.public_repos }}
       </p>
       <div
-        class="full-width col-4 q-mb-lg q-mt-md d-flex row flex-center content-start"
+        class="
+          full-width
+          col-4
+          q-mb-lg q-mt-md
+          d-flex
+          row
+          flex-center
+          content-start
+        "
       >
         <q-input
           @input="filterRepository"
@@ -138,7 +156,7 @@
               <a class="text-h6 justify-center full-width row bb"
                 ><div class="ellipsis">{{ repository.name }}</div></a
               >
-              <div class="row justify-center" style="height:15px">
+              <div class="row justify-center" style="height: 15px">
                 <q-icon class="q-mt-xs text-orange" name="stars" />
                 <p class="text-h8">{{ repository.stargazers_count }}</p>
                 <q-icon class="q-mt-xs q-ml-auto" name="remove_red_eye" />
@@ -192,17 +210,17 @@
           ></q-checkbox>
           <q-checkbox
             label="Localização"
-            @input="configs.nickname = false"
+            @input="teste($event, 'locale')"
             v-model="configs.locale"
           ></q-checkbox>
           <q-checkbox
             label="Linguagem"
-            @input="configs.nickname = false"
+            @input="teste($event, 'language')"
             v-model="configs.language"
           ></q-checkbox>
           <q-checkbox
             label="Nº Repositórios"
-            @input="configs.nickname = false"
+            @input="teste($event, 'repos')"
             v-model="configs.repos"
           ></q-checkbox>
         </q-card-section>
@@ -227,12 +245,261 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <v-tour name="myTour" :steps="steps"></v-tour>
   </q-page>
 </template>
 
 <script>
+const paises = [
+  "Afeganistão",
+  "África do Sul",
+  "Albânia",
+  "Alemanha",
+  "Andorra",
+  "Angola",
+  "Anguilla",
+  "Antártida",
+  "Antígua e Barbuda",
+  "Antilhas Holandesas",
+  "Arábia Saudita",
+  "Argélia",
+  "Argentina",
+  "Armênia",
+  "Aruba",
+  "Austrália",
+  "Áustria",
+  "Azerbaijão",
+  "Bahamas",
+  "Bahrein",
+  "Bangladesh",
+  "Barbados",
+  "Belarus",
+  "Bélgica",
+  "Belize",
+  "Benin",
+  "Bermudas",
+  "Bolívia",
+  "Bósnia-Herzegóvina",
+  "Botsuana",
+  "Brasil",
+  "Brunei",
+  "Bulgária",
+  "Burkina Fasso",
+  "Burundi",
+  "Butão",
+  "Cabo Verde",
+  "Camarões",
+  "Camboja",
+  "Canadá",
+  "Cazaquistão",
+  "Chade",
+  "Chile",
+  "China",
+  "Chipre",
+  "Cingapura",
+  "Colômbia",
+  "Congo",
+  "Coréia do Norte",
+  "Coréia do Sul",
+  "Costa do Marfim",
+  "Costa Rica",
+  "Croácia (Hrvatska)",
+  "Cuba",
+  "Dinamarca",
+  "Djibuti",
+  "Dominica",
+  "Egito",
+  "El Salvador",
+  "Emirados Árabes Unidos",
+  "Equador",
+  "Eritréia",
+  "Eslováquia",
+  "Eslovênia",
+  "Espanha",
+  "Estados Unidos",
+  "Estônia",
+  "Etiópia",
+  "Fiji",
+  "Filipinas",
+  "Finlândia",
+  "França",
+  "Gabão",
+  "Gâmbia",
+  "Gana",
+  "Geórgia",
+  "Gibraltar",
+  "Grã-Bretanha (Reino Unido, UK)",
+  "Granada",
+  "Grécia",
+  "Groelândia",
+  "Guadalupe",
+  "Guam (Território dos Estados Unidos)",
+  "Guatemala",
+  "Guernsey",
+  "Guiana",
+  "Guiana Francesa",
+  "Guiné",
+  "Guiné Equatorial",
+  "Guiné-Bissau",
+  "Haiti",
+  "Holanda",
+  "Honduras",
+  "Hong Kong",
+  "Hungria",
+  "Iêmen",
+  "Ilha Bouvet (Território da Noruega)",
+  "Ilha do Homem",
+  "Ilha Natal",
+  "Ilha Pitcairn",
+  "Ilha Reunião",
+  "Ilhas Aland",
+  "Ilhas Cayman",
+  "Ilhas Cocos",
+  "Ilhas Comores",
+  "Ilhas Cook",
+  "Ilhas Faroes",
+  "Ilhas Falkland (Malvinas)",
+  "Ilhas Geórgia do Sul e Sandwich do Sul",
+  "Ilhas Heard e McDonald (Território da Austrália)",
+  "Ilhas Marianas do Norte",
+  "Ilhas Marshall",
+  "Ilhas Menores dos Estados Unidos",
+  "Ilhas Norfolk",
+  "Ilhas Seychelles",
+  "Ilhas Solomão",
+  "Ilhas Svalbard e Jan Mayen",
+  "Ilhas Tokelau",
+  "Ilhas Turks e Caicos",
+  "Ilhas Virgens (Estados Unidos)",
+  "Ilhas Virgens (Inglaterra)",
+  "Ilhas Wallis e Futuna",
+  "índia",
+  "Indonésia",
+  "Irã",
+  "Iraque",
+  "Irlanda",
+  "Islândia",
+  "Israel",
+  "Itália",
+  "Jamaica",
+  "Japão",
+  "Jersey",
+  "Jordânia",
+  "Kênia",
+  "Kiribati",
+  "Kuait",
+  "Laos",
+  "Látvia",
+  "Lesoto",
+  "Líbano",
+  "Libéria",
+  "Líbia",
+  "Liechtenstein",
+  "Lituânia",
+  "Luxemburgo",
+  "Macau",
+  "Macedônia (República Yugoslava)",
+  "Madagascar",
+  "Malásia",
+  "Malaui",
+  "Maldivas",
+  "Mali",
+  "Malta",
+  "Marrocos",
+  "Martinica",
+  "Maurício",
+  "Mauritânia",
+  "Mayotte",
+  "México",
+  "Micronésia",
+  "Moçambique",
+  "Moldova",
+  "Mônaco",
+  "Mongólia",
+  "Montenegro",
+  "Montserrat",
+  "Myanma",
+  "Namíbia",
+  "Nauru",
+  "Nepal",
+  "Nicarágua",
+  "Níger",
+  "Nigéria",
+  "Niue",
+  "Noruega",
+  "Nova Caledônia",
+  "Nova Zelândia",
+  "Omã",
+  "Palau",
+  "Panamá",
+  "Papua-Nova Guiné",
+  "Paquistão",
+  "Paraguai",
+  "Peru",
+  "Polinésia Francesa",
+  "Polônia",
+  "Porto Rico",
+  "Portugal",
+  "Qatar",
+  "Quirguistão",
+  "República Centro-Africana",
+  "República Democrática do Congo",
+  "República Dominicana",
+  "República Tcheca",
+  "Romênia",
+  "Ruanda",
+  "Rússia (antiga URSS) - Federação Russa",
+  "Saara Ocidental",
+  "Saint Vincente e Granadinas",
+  "Samoa Americana",
+  "Samoa Ocidental",
+  "San Marino",
+  "Santa Helena",
+  "Santa Lúcia",
+  "São Bartolomeu",
+  "São Cristóvão e Névis",
+  "São Martim",
+  "São Tomé e Príncipe",
+  "Senegal",
+  "Serra Leoa",
+  "Sérvia",
+  "Síria",
+  "Somália",
+  "Sri Lanka",
+  "St. Pierre and Miquelon",
+  "Suazilândia",
+  "Sudão",
+  "Suécia",
+  "Suíça",
+  "Suriname",
+  "Tadjiquistão",
+  "Tailândia",
+  "Taiwan",
+  "Tanzânia",
+  "Território Britânico do Oceano índico",
+  "Territórios do Sul da França",
+  "Territórios Palestinos Ocupados",
+  "Timor Leste",
+  "Togo",
+  "Tonga",
+  "Trinidad and Tobago",
+  "Tunísia",
+  "Turcomenistão",
+  "Turquia",
+  "Tuvalu",
+  "Ucrânia",
+  "Uganda",
+  "Uruguai",
+  "Uzbequistão",
+  "Vanuatu",
+  "Vaticano",
+  "Venezuela",
+  "Vietnã",
+  "Zâmbia",
+  "Zimbábue"
+];
 export default {
-  name: "PageIndex",
+  name: "myTour",
   data() {
     return {
       configs: {},
@@ -246,12 +513,25 @@ export default {
         locale: {
           label: "Escolha o lugar",
           filter: "location",
+          options: paises,
           value: null
         },
         language: {
           label: "Escolha a linguagem",
           filter: "language",
-          value: null
+          value: null,
+          options: [
+            "Javascript",
+            "Java",
+            "C",
+            "C#",
+            "Python",
+            "Typescript",
+            "Go",
+            "Swift",
+            "Kotlin",
+            "R"
+          ]
         },
         repos: {
           label: "Quantidade de repositórios",
@@ -268,7 +548,17 @@ export default {
       favorite: false,
       confirm: false,
       repositoryToFilter: null,
-      repositoriesToShow: []
+      repositoriesToShow: [],
+      steps: [
+        {
+          target: "#v-step-0", // We're using document.querySelector() under the hood
+          content: `Discover <strong>Vue Tour</strong>!`
+        },
+        {
+          target: "#v-step-1",
+          content: "An awesome plugin made with Vue.js!"
+        }
+      ]
     };
   },
   mounted() {
@@ -277,13 +567,16 @@ export default {
   },
   methods: {
     async searchUsers() {
-      this.userFound = {}
+      this.userFound = {};
       this.$q.loading.show();
       const locale = this.getQuery("locale");
       const language = this.getQuery("language");
       const repos = this.getQuery("repos");
       const { data } = await this.$http(
-        "https://api.github.com/search/users?q=type:user" + locale + language + repos
+        "https://api.github.com/search/users?q=type:user" +
+          locale +
+          language +
+          repos
       );
       this.usersFound = data.items;
       this.$q.loading.hide();
@@ -291,13 +584,28 @@ export default {
     getQuery(value) {
       if (this.filter[value].value && this.filter[value].value.length)
         if (value === "repos") {
-          return `${this.filter[value].filter}:>${this.filter[value].value}`;
+          return `+${this.filter[value].filter}:>${this.filter[value].value}`;
         } else
-          return `${this.filter[value].filter}:${this.filter[value].value}+`;
+          return `+${this.filter[value].filter}:${this.filter[
+            value
+          ].value.toLowerCase()}`;
       return "";
     },
     test(value) {
+      const hasTrue = Object.values(this.configs).some(obj => obj);
+      if (!hasTrue) {
+        this.configs.locale = true;
+        this.filter.nickname = null;
+      }
+
       if (value) this.configs = Object.assign({}, this.initialConfigState);
+    },
+    teste(value, prop) {
+      if (!value) this.filter[prop].value = null;
+      this.configs.nickname = false;
+      console.log(this.filter);
+      const hasTrue = Object.values(this.configs).some(obj => obj);
+      if (!hasTrue) this.configs.nickname = true;
     },
     goToRepository(i) {
       const win = window.open(this.repositories[i].html_url, "_blank");
@@ -313,6 +621,7 @@ export default {
         response => response.data
       );
       this.repositoriesToShow = this.repositories;
+      this.userFound.public_repos = this.repositories.length
       this.$q.loading.hide();
     },
     async searchUser() {
@@ -372,7 +681,8 @@ export default {
         repository.name.includes(value)
       );
     }
-  }
+  },
+  watch: {}
 };
 </script>
 <style scoped>
