@@ -6,7 +6,7 @@
       :offset="[18, 18]"
     >
       <q-btn
-        id="#v-step-1"
+        id="v-step-1"
         fab
         @click="configDialog = true"
         icon="settings"
@@ -42,6 +42,7 @@
         :disable="userToFind ? userToFind.length < 1 : true"
         color="primary"
         icon="search"
+        id="input1"
         @click="searchUser"
       />
     </div>
@@ -55,6 +56,7 @@
           :options="filter.locale.options"
           :label="filter.locale.label"
           v-model="filter.locale.value"
+          :id="filter.locale.label"
         />
       </div>
       <div v-if="configs.language" class="col-12 col-sm-6">
@@ -65,7 +67,11 @@
         />
       </div>
       <div v-if="configs.repos" class="col-12 col-sm-6">
-        <q-input :label="filter.repos.label" v-model="filter.repos.value" />
+        <q-input
+          id="repos"
+          :label="filter.repos.label"
+          v-model="filter.repos.value"
+        />
       </div>
       <div></div>
       <div class="col-12 q-mx-auto self-center">
@@ -73,6 +79,7 @@
           @click="searchUsers"
           class="col-12 full-width q-mx-auto self-center"
           color="primary"
+          id="input0"
           style="max-width: 500px"
           label="pesquisar"
         />
@@ -88,6 +95,7 @@
         </q-avatar>
         <q-btn
           @click="toggleFavorites"
+          id="favoritar"
           class="absolute star-button"
           label=""
           color="yellow-1"
@@ -179,10 +187,10 @@
         class="row col-12 col-sm-6 relative-position bb"
         v-for="user in usersFound"
         :key="user.id"
+        @click="goToUser(user)"
       >
         <q-avatar
           class="cursor-pointer"
-          @click="goToUser(user)"
           size="100px"
           font-size="52px"
           color="teal"
@@ -209,6 +217,7 @@
             v-model="configs.nickname"
           ></q-checkbox>
           <q-checkbox
+            id="locate"
             label="Localização"
             @input="teste($event, 'locale')"
             v-model="configs.locale"
@@ -222,6 +231,7 @@
             label="Nº Repositórios"
             @input="teste($event, 'repos')"
             v-model="configs.repos"
+            id="repos"
           ></q-checkbox>
         </q-card-section>
         <q-card-actions class="q-mt-auto">
@@ -229,6 +239,7 @@
             color="primary"
             class="full-width"
             @click="configDialog = false"
+            id="closeModal"
             >Confirmar</q-btn
           >
         </q-card-actions>
@@ -564,6 +575,7 @@ export default {
   mounted() {
     this.configs = Object.assign({}, this.initialConfigState);
     this.filter = Object.assign({}, this.initialFilterState);
+    this.$tours.myTour.start();
   },
   methods: {
     async searchUsers() {
@@ -603,7 +615,6 @@ export default {
     teste(value, prop) {
       if (!value) this.filter[prop].value = null;
       this.configs.nickname = false;
-      console.log(this.filter);
       const hasTrue = Object.values(this.configs).some(obj => obj);
       if (!hasTrue) this.configs.nickname = true;
     },
@@ -621,7 +632,7 @@ export default {
         response => response.data
       );
       this.repositoriesToShow = this.repositories;
-      this.userFound.public_repos = this.repositories.length
+      this.userFound.public_repos = this.repositories.length;
       this.$q.loading.hide();
     },
     async searchUser() {
