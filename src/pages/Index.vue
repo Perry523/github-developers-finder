@@ -641,17 +641,17 @@ export default {
         .then(response => response.data)
         .catch(() => {
           this.userToFind = "";
-          this.$q.loading.hide();
           this.$q.notify({
             timeout: 1500,
             position: "top",
             message: "Usuário não encontrado"
           });
+          this.$q.loading.hide();
           return {};
         });
       this.isFavorite();
       this.$q.loading.hide();
-      this.loadRepositories(this.userFound);
+      if(this.userFound.id) this.loadRepositories(this.userFound);
     },
     toggleFavorites() {
       if (this.favorite) {
